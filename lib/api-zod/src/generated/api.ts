@@ -14,3 +14,93 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all UGC video jobs (newest first)
+ */
+export const ListUgcJobsResponseItem = zod.object({
+  id: zod.number(),
+  productUrl: zod.string(),
+  status: zod.enum(["pending", "processing", "completed", "failed"]),
+  progress: zod
+    .string()
+    .describe("Human-readable description of the current step"),
+  productTitle: zod.string().nullish(),
+  productSummary: zod.string().nullish(),
+  script: zod.string().nullish(),
+  voiceover: zod
+    .string()
+    .nullish()
+    .describe("Final narration text used for the video"),
+  videoUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative URL to the generated 9:16 MP4 (under \/api\/ugc\/files)",
+    ),
+  thumbnailUrl: zod.string().nullish(),
+  referenceImageUrls: zod.array(zod.string()),
+  sceneImageUrls: zod.array(zod.string()),
+  durationSeconds: zod.number().nullish(),
+  errorMessage: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListUgcJobsResponse = zod.array(ListUgcJobsResponseItem);
+
+/**
+ * @summary Submit a product URL and reference images to generate a UGC video
+ */
+
+export const CreateUgcJobBody = zod.object({
+  productUrl: zod.string().describe("Public URL of the product page"),
+  referenceImages: zod
+    .array(zod.string())
+    .min(1)
+    .describe(
+      "Array of base64-encoded images (data URIs allowed) of the actual product",
+    ),
+});
+
+/**
+ * @summary Get a single job and its current status
+ */
+export const GetUgcJobParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetUgcJobResponse = zod.object({
+  id: zod.number(),
+  productUrl: zod.string(),
+  status: zod.enum(["pending", "processing", "completed", "failed"]),
+  progress: zod
+    .string()
+    .describe("Human-readable description of the current step"),
+  productTitle: zod.string().nullish(),
+  productSummary: zod.string().nullish(),
+  script: zod.string().nullish(),
+  voiceover: zod
+    .string()
+    .nullish()
+    .describe("Final narration text used for the video"),
+  videoUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Server-relative URL to the generated 9:16 MP4 (under \/api\/ugc\/files)",
+    ),
+  thumbnailUrl: zod.string().nullish(),
+  referenceImageUrls: zod.array(zod.string()),
+  sceneImageUrls: zod.array(zod.string()),
+  durationSeconds: zod.number().nullish(),
+  errorMessage: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a job and its associated files
+ */
+export const DeleteUgcJobParams = zod.object({
+  id: zod.coerce.number(),
+});

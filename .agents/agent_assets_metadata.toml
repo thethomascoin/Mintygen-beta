@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "ukCGyE-C22kANALseZlJ9"
+uri = "file://artifacts/ugc-pilot/assets/images/icon.png"
+type = "image"
+title = "ugc app icon"

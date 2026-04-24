@@ -7,3 +7,7 @@
  */
 
 export * from "./healthStatus";
+export * from "./ugcError";
+export * from "./ugcJob";
+export * from "./ugcJobInput";
+export * from "./ugcJobStatus";

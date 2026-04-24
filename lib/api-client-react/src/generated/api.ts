@@ -5,18 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  HealthStatus,
+  UgcError,
+  UgcJob,
+  UgcJobInput,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +107,331 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all UGC video jobs (newest first)
+ */
+export const getListUgcJobsUrl = () => {
+  return `/api/ugc/jobs`;
+};
+
+export const listUgcJobs = async (options?: RequestInit): Promise<UgcJob[]> => {
+  return customFetch<UgcJob[]>(getListUgcJobsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListUgcJobsQueryKey = () => {
+  return [`/api/ugc/jobs`] as const;
+};
+
+export const getListUgcJobsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUgcJobs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listUgcJobs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListUgcJobsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUgcJobs>>> = ({
+    signal,
+  }) => listUgcJobs({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listUgcJobs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListUgcJobsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listUgcJobs>>
+>;
+export type ListUgcJobsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all UGC video jobs (newest first)
+ */
+
+export function useListUgcJobs<
+  TData = Awaited<ReturnType<typeof listUgcJobs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listUgcJobs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListUgcJobsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit a product URL and reference images to generate a UGC video
+ */
+export const getCreateUgcJobUrl = () => {
+  return `/api/ugc/jobs`;
+};
+
+export const createUgcJob = async (
+  ugcJobInput: UgcJobInput,
+  options?: RequestInit,
+): Promise<UgcJob> => {
+  return customFetch<UgcJob>(getCreateUgcJobUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(ugcJobInput),
+  });
+};
+
+export const getCreateUgcJobMutationOptions = <
+  TError = ErrorType<UgcError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createUgcJob>>,
+    TError,
+    { data: BodyType<UgcJobInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createUgcJob>>,
+  TError,
+  { data: BodyType<UgcJobInput> },
+  TContext
+> => {
+  const mutationKey = ["createUgcJob"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createUgcJob>>,
+    { data: BodyType<UgcJobInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createUgcJob(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateUgcJobMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createUgcJob>>
+>;
+export type CreateUgcJobMutationBody = BodyType<UgcJobInput>;
+export type CreateUgcJobMutationError = ErrorType<UgcError>;
+
+/**
+ * @summary Submit a product URL and reference images to generate a UGC video
+ */
+export const useCreateUgcJob = <
+  TError = ErrorType<UgcError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createUgcJob>>,
+    TError,
+    { data: BodyType<UgcJobInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createUgcJob>>,
+  TError,
+  { data: BodyType<UgcJobInput> },
+  TContext
+> => {
+  return useMutation(getCreateUgcJobMutationOptions(options));
+};
+
+/**
+ * @summary Get a single job and its current status
+ */
+export const getGetUgcJobUrl = (id: number) => {
+  return `/api/ugc/jobs/${id}`;
+};
+
+export const getUgcJob = async (
+  id: number,
+  options?: RequestInit,
+): Promise<UgcJob> => {
+  return customFetch<UgcJob>(getGetUgcJobUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetUgcJobQueryKey = (id: number) => {
+  return [`/api/ugc/jobs/${id}`] as const;
+};
+
+export const getGetUgcJobQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUgcJob>>,
+  TError = ErrorType<UgcError>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUgcJob>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetUgcJobQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUgcJob>>> = ({
+    signal,
+  }) => getUgcJob(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getUgcJob>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetUgcJobQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getUgcJob>>
+>;
+export type GetUgcJobQueryError = ErrorType<UgcError>;
+
+/**
+ * @summary Get a single job and its current status
+ */
+
+export function useGetUgcJob<
+  TData = Awaited<ReturnType<typeof getUgcJob>>,
+  TError = ErrorType<UgcError>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUgcJob>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetUgcJobQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a job and its associated files
+ */
+export const getDeleteUgcJobUrl = (id: number) => {
+  return `/api/ugc/jobs/${id}`;
+};
+
+export const deleteUgcJob = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteUgcJobUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteUgcJobMutationOptions = <
+  TError = ErrorType<UgcError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUgcJob>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteUgcJob>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteUgcJob"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteUgcJob>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteUgcJob(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteUgcJobMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteUgcJob>>
+>;
+
+export type DeleteUgcJobMutationError = ErrorType<UgcError>;
+
+/**
+ * @summary Delete a job and its associated files
+ */
+export const useDeleteUgcJob = <
+  TError = ErrorType<UgcError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUgcJob>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteUgcJob>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteUgcJobMutationOptions(options));
+};

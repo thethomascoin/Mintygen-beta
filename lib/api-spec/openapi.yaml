@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: ugc
+    description: UGC video generation operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,86 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /ugc/jobs:
+    get:
+      operationId: listUgcJobs
+      tags: [ugc]
+      summary: List all UGC video jobs (newest first)
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UgcJob"
+    post:
+      operationId: createUgcJob
+      tags: [ugc]
+      summary: Submit a product URL and reference images to generate a UGC video
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UgcJobInput"
+      responses:
+        "201":
+          description: Job created (status pending; processing starts immediately)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UgcJob"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UgcError"
+  /ugc/jobs/{id}:
+    get:
+      operationId: getUgcJob
+      tags: [ugc]
+      summary: Get a single job and its current status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UgcJob"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UgcError"
+    delete:
+      operationId: deleteUgcJob
+      tags: [ugc]
+      summary: Delete a job and its associated files
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UgcError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +115,87 @@ components:
           type: string
       required:
         - status
-
+    UgcJobInput:
+      type: object
+      properties:
+        productUrl:
+          type: string
+          description: Public URL of the product page
+        referenceImages:
+          type: array
+          description: Array of base64-encoded images (data URIs allowed) of the actual product
+          items:
+            type: string
+          minItems: 1
+      required:
+        - productUrl
+        - referenceImages
+    UgcJob:
+      type: object
+      properties:
+        id:
+          type: integer
+        productUrl:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: string
+          description: Human-readable description of the current step
+        productTitle:
+          type: string
+          nullable: true
+        productSummary:
+          type: string
+          nullable: true
+        script:
+          type: string
+          nullable: true
+        voiceover:
+          type: string
+          nullable: true
+          description: Final narration text used for the video
+        videoUrl:
+          type: string
+          nullable: true
+          description: Server-relative URL to the generated 9:16 MP4 (under /api/ugc/files)
+        thumbnailUrl:
+          type: string
+          nullable: true
+        referenceImageUrls:
+          type: array
+          items:
+            type: string
+        sceneImageUrls:
+          type: array
+          items:
+            type: string
+        durationSeconds:
+          type: integer
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - productUrl
+        - status
+        - progress
+        - referenceImageUrls
+        - sceneImageUrls
+        - createdAt
+        - updatedAt
+    UgcError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

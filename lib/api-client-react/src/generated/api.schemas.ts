@@ -8,3 +8,48 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface UgcJobInput {
+  /** Public URL of the product page */
+  productUrl: string;
+  /**
+   * Array of base64-encoded images (data URIs allowed) of the actual product
+   * @minItems 1
+   */
+  referenceImages: string[];
+}
+
+export type UgcJobStatus = (typeof UgcJobStatus)[keyof typeof UgcJobStatus];
+
+export const UgcJobStatus = {
+  pending: "pending",
+  processing: "processing",
+  completed: "completed",
+  failed: "failed",
+} as const;
+
+export interface UgcJob {
+  id: number;
+  productUrl: string;
+  status: UgcJobStatus;
+  /** Human-readable description of the current step */
+  progress: string;
+  productTitle?: string | null;
+  productSummary?: string | null;
+  script?: string | null;
+  /** Final narration text used for the video */
+  voiceover?: string | null;
+  /** Server-relative URL to the generated 9:16 MP4 (under /api/ugc/files) */
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
+  referenceImageUrls: string[];
+  sceneImageUrls: string[];
+  durationSeconds?: number | null;
+  errorMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UgcError {
+  error: string;
+}
