@@ -36,12 +36,16 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+    // Hide splash immediately — never block the UI on font loading. If the
+    // Google Fonts CDN is slow or unreachable (e.g. ERR_CONNECTION_RESET on
+    // the web preview) the app will fall back to system fonts and still be
+    // usable, instead of showing a permanently blank screen.
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
-  if (!fontsLoaded && !fontError) return null;
+  // Intentionally do NOT gate render on fontsLoaded — see comment above.
+  void fontsLoaded;
+  void fontError;
 
   return (
     <SafeAreaProvider>
