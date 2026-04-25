@@ -91,10 +91,17 @@ export async function runUgcPipeline(jobId: number): Promise<void> {
         progress: `Generating scene ${i + 1} of ${script.scenes.length}`,
       });
 
-      const fullPrompt = `Vertical 9:16 phone-shot photograph for a TikTok UGC video, scene ${i + 1} of 4.
+      const fullPrompt = `Authentic UGC TikTok still, vertical 9:16, shot on iPhone front or rear camera by a regular person — NOT a studio photo, NOT a product page render. Scene ${i + 1} of ${script.scenes.length}.
+
 ${scene.visualPrompt}
-Use the EXACT product shown in the attached reference images — preserve its real shape, color, branding, and packaging. Do NOT invent a different product.
-Style: natural lighting, shot on iPhone, slight grain, candid composition, no text overlays, no watermarks. The product must be clearly visible and recognizable.`;
+
+CRITICAL VISUAL RULES:
+- The EXACT product from the attached reference images must be the clear subject. Preserve its real shape, color, branding, packaging, and proportions. Do NOT invent a different product or change its design.
+- Camera perspective is a real human holding a phone. Most shots are POV with a human hand or arm visible in the frame holding or interacting with the product. Hand should look natural (any skin tone, casual, no manicure unless reference suggests it).
+- NEVER show a person's face. Never show full body. Hands, arms, partial torso only.
+- Real domestic environment in the background (kitchen counter, bathroom sink, bedroom, car interior, sidewalk, desk). NOT a studio, NOT a white background, NOT a marketing setup.
+- Natural lighting (window light, indoor lamp, daylight). Slight digital grain, slightly imperfect framing, soft motion blur acceptable. Looks like it was shot in 5 seconds without thinking.
+- ABSOLUTELY NO text overlays, NO captions, NO watermarks, NO logos other than the product's own packaging.`;
 
       const result = await geminiGenerateImage(fullPrompt, refParts);
       const ext =
@@ -137,7 +144,9 @@ Style: natural lighting, shot on iPhone, slight grain, candid composition, no te
       audioPath,
       outputPath: videoPath,
       thumbnailPath: thumbPath,
-      captions: script.scenes.map((s) => s.caption),
+      // Captions intentionally empty — the reference UGC style we're matching
+      // has no on-screen text overlays; the voiceover carries the narrative.
+      captions: script.scenes.map(() => ""),
     });
 
     await setProgress(jobId, {

@@ -120,9 +120,12 @@ function buildMotion(preset: Motion, framesPerScene: number): MotionExpr {
   // Per-frame zoom step so we hit ZMAX over the scene.
   const K = ((1.4 - 1.0) / N).toFixed(6);
   const KH = ((1.35 - 1.05) / N).toFixed(6);
-  // Handheld micro-jitter in source pixels (~8-14 source px ≈ 5-9 output px).
-  const jx = "+12*sin(on/2.7)";
-  const jy = "+10*sin(on/3.3+0.8)";
+  // Handheld jitter — bumped to feel like an actual phone in someone's hand,
+  // not a tripod-on-a-rail. Source pixels at 1944 wide → output 1080 wide,
+  // so 22 source px ≈ 12 output px of wobble. Two superposed sines at
+  // different frequencies create non-repeating motion.
+  const jx = "+22*sin(on/2.1)+9*sin(on/0.7)";
+  const jy = "+18*sin(on/2.6+0.8)+7*cos(on/0.6)";
   const xCenter = `iw/2-(iw/zoom/2)${jx}`;
   const yCenter = `ih/2-(ih/zoom/2)${jy}`;
   const zPushIn = `min(1.0+on*${K}\\,${ZMAX})`;
