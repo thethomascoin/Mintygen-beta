@@ -58,9 +58,13 @@ function ffprobeDuration(audioPath: string): Promise<number> {
 function escapeForDrawText(text: string): string {
   return text
     .replace(/\\/g, "\\\\")
-    .replace(/:/g, "\\:")
     .replace(/'/g, "\\'")
-    .replace(/%/g, "\\%");
+    .replace(/:/g, "\\:")
+    .replace(/%/g, "\\%")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;")
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]");
 }
 
 export async function composeUgcVideo(
@@ -98,8 +102,10 @@ export async function composeUgcVideo(
         )}':fontcolor=white:fontsize=72:borderw=4:bordercolor=black@0.85:x=(w-text_w)/2:y=h-h/4`
       : "";
     filterParts.push(
-      // Crop+scale to 1080x1920, slow Ken-burns zoom in, optional caption
-      `[${inLabel}]scale=1620:2880:force_original_aspect_ratio=increase,crop=1620:2880,zoompan=z='min(zoom+0.0009,1.18)':d=${framesPerScene}:s=1080x1920:fps=${fps}${drawTextFilter}[${outLabel}]`
+      // Crop+scale to 1080x1920, slow Ken-burns zoom in, optional caption.
+      // Inside filter_complex, commas inside expressions must be backslash-
+      // escaped or the graph parser treats them as filter separators.
+      `[${inLabel}]scale=1620:2880:force_original_aspect_ratio=increase,crop=1620:2880,zoompan=z='min(zoom+0.0009\\,1.18)':d=${framesPerScene}:s=1080x1920:fps=${fps}${drawTextFilter}[${outLabel}]`
     );
     labels.push(`[${outLabel}]`);
   });
