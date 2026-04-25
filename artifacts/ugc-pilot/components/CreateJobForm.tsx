@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -24,6 +25,18 @@ interface PickedImage {
 
 const MAX_IMAGES = 4;
 
+function safeHaptic(fn: () => Promise<unknown> | unknown) {
+  if (Platform.OS === "web") return;
+  try {
+    const r = fn();
+    if (r && typeof (r as Promise<unknown>).catch === "function") {
+      (r as Promise<unknown>).catch(() => {});
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export function CreateJobForm() {
   const colors = useColors();
   const [productUrl, setProductUrl] = useState("");
@@ -35,38 +48,86 @@ export function CreateJobForm() {
     images.length > 0 &&
     !createMutation.isPending;
 
+  async function readAsBase64(uri: string): Promise<string | null> {
+    try {
+      const res = await fetch(uri);
+      const blob = await res.blob();
+      return await new Promise<string | null>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result !== "string") return resolve(null);
+          const i = result.indexOf("base64,");
+          resolve(i >= 0 ? result.slice(i + "base64,".length) : null);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async function pickImage() {
     if (images.length >= MAX_IMAGES) {
       Alert.alert("Limit reached", `You can attach up to ${MAX_IMAGES} reference images.`);
       return;
     }
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Photo library access is needed to add reference images.");
-      return;
+
+    if (Platform.OS !== "web") {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission required",
+          "Photo library access is needed to add reference images."
+        );
+        return;
+      }
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-      base64: true,
-      selectionLimit: MAX_IMAGES - images.length,
-      allowsMultipleSelection: true,
-    });
+    let result: ImagePicker.ImagePickerResult;
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.7,
+        base64: true,
+        selectionLimit: MAX_IMAGES - images.length,
+        allowsMultipleSelection: true,
+      });
+    } catch (err) {
+      Alert.alert(
+        "Could not open photo library",
+        err instanceof Error ? err.message : "Try again"
+      );
+      return;
+    }
 
     if (result.canceled) return;
 
     const next: PickedImage[] = [];
     for (const asset of result.assets) {
-      if (!asset.base64) continue;
       const mimeType = asset.mimeType ?? "image/jpeg";
+      let base64 = asset.base64 ?? null;
+      if (!base64 && asset.uri) {
+        base64 = await readAsBase64(asset.uri);
+      }
+      if (!base64) continue;
       next.push({
         uri: asset.uri,
-        base64: asset.base64,
+        base64,
         mimeType,
       });
     }
+
+    if (next.length === 0) {
+      Alert.alert(
+        "Could not read image",
+        "We couldn't read the selected file. Try a different photo."
+      );
+      return;
+    }
+
     setImages((prev) => [...prev, ...next].slice(0, MAX_IMAGES));
   }
 
@@ -76,20 +137,31 @@ export function CreateJobForm() {
 
   async function submit() {
     if (!canSubmit) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    safeHaptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
     const trimmed = productUrl.trim();
     const url = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+
+    try {
+      new URL(url);
+    } catch {
+      Alert.alert("Invalid URL", "Please enter a valid product URL.");
+      return;
+    }
 
     try {
       await createMutation.mutateAsync({
         productUrl: url,
         referenceImages: images.map((i) => `data:${i.mimeType};base64,${i.base64}`),
       });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      safeHaptic(() =>
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      );
       setProductUrl("");
       setImages([]);
     } catch (err) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      safeHaptic(() =>
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      );
       Alert.alert(
         "Could not start job",
         err instanceof Error ? err.message : "Something went wrong"

@@ -37,7 +37,20 @@ export default function HomeScreen() {
     if (j.status === "completed" && j.videoUrl) {
       setOpenJobId(j.id);
     } else if (j.status === "failed") {
-      Alert.alert("Generation failed", j.errorMessage ?? "Unknown error");
+      Alert.alert(
+        "Generation failed",
+        j.errorMessage ?? "Unknown error",
+        [
+          { text: "Dismiss", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              deleteMutation.mutate(j.id);
+            },
+          },
+        ]
+      );
     }
   }
 
