@@ -55,5 +55,13 @@
     "typescript": "~5.9.2",
     "zod": "catalog:",
     "zod-validation-error": "^3.4.0"
+    {
+  "name": "@workspace/api-server",
+  "scripts": {
+    "build": "rm -rf .tsbuildinfo && node ./build.mjs",
+    "clean": "rm -rf .tsbuildinfo"
+  }
+}
+
   }
 }
