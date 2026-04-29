@@ -58,10 +58,3 @@
     "zod-validation-error": "^3.4.0"
   }
 }
-    "build": "rm -rf .tsbuildinfo && node ./build.mjs",
-    "clean": "rm -rf .tsbuildinfo"
-  }
-}
-
-  }
-}
